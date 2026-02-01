@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orçamentos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background:#f6f6f6; }
+    h1 { font-size: 18px; }
+    .search { margin-bottom: 10px; }
+    input { width: 100%; padding: 8px; margin-bottom: 8px; }
+    .product { background:#fff; padding:8px; margin-bottom:6px; border-radius:6px; }
+    .name { font-weight: bold; }
+    .etiqueta { color: #1e88e5; font-size: 12px; margin-left: 6px; }
+    .price { color:#2e7d32; }
+    button { padding:10px; width:100%; background:#25D366; border:none; color:#fff; font-size:16px; border-radius:6px; }
+    .cart { background:#fff; padding:10px; border-radius:6px; margin-top:10px; }
+    .item { border-bottom:1px solid #ddd; padding:6px 0; }
+    .total { font-size:18px; font-weight:bold; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <h1>Orçamento <span id="numOrc"></span></h1>
+
+  <input id="cliente" placeholder="Telefone do cliente" oninput="atualizaHeader()" />
+<div id="headerInfo" style="font-size:12px;color:#555;margin-bottom:10px;"></div>
+
+  <div class="search">
+    <input id="busca" placeholder="Buscar por nome ou princípio ativo" />
+  </div>
+
+  <div id="produtos"></div>
+
+  <div class="cart" id="orcamento">
+    <h2>Itens</h2>
+    <div id="itens"></div>
+    <div class="total" id="total">Total: R$ 0,00</div>
+  </div>
+
+  <button onclick="enviar()">ENVIAR ORÇAMENTO</button>
+
+<script>
+let produtos = [];
+let numeroOrcamento = Math.floor(Math.random() * 9000) + 1000;
+let carrinho = [];
+
+fetch('Produtos_01022026.CSV')
+  .then(r => r.text())
+  .then(text => {
+    const linhas = text.split('\n');
+    const cab = linhas[0].split(';');
+    linhas.slice(1).forEach(l => {
+      const c = l.split(';');
+      if(c.length > 6){
+        produtos.push({
+          nome: c[cab.indexOf('Descricao')],
+          etiqueta: c[cab.indexOf('Etiqueta')],
+          principio: c[cab.indexOf('Principio Ativo')],
+          preco: parseFloat(c[cab.indexOf('Preco Referencia')]?.replace(',', '.')) || 0
+        });
+      }
+    });
+    renderProdutos(produtos);
+  });
+
+function renderProdutos(lista){
+  const div = document.getElementById('produtos');
+  div.innerHTML = '';
+  lista.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'product';
+    d.innerHTML = `<div class="name">${p.nome}<span class="etiqueta">${p.etiqueta}</span></div><div class="price">R$ ${p.preco.toFixed(2)}</div>`;
+    d.onclick = () => add(p);
+    div.appendChild(d);
+  });
+}
+
+function add(p){
+  carrinho.push({...p, qtd:1, desc:0});
+  renderCarrinho();
+}
+
+function atualizaHeader(){
+  const tel = document.getElementById('cliente').value;
+  document.getElementById('headerInfo').innerText = 'Cliente: ' + tel;
+}
+
+document.getElementById('numOrc').innerText = '#' + numeroOrcamento;
+
+function renderCarrinho(){
+  const div = document.getElementById('itens');
+  div.innerHTML = '';
+  let total = 0;
+  carrinho.forEach(i => {
+    const t = (i.preco - i.desc) * i.qtd;
+    total += t;
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = `${i.nome} <span class="etiqueta">${i.etiqueta}</span><br>R$ ${t.toFixed(2)}`;
+    div.appendChild(d);
+  });
+  document.getElementById('total').innerText = 'Total: R$ ' + total.toFixed(2);
+}
+
+busca.oninput = e => {
+  const v = e.target.value.toLowerCase();
+  renderProdutos(produtos.filter(p => p.nome?.toLowerCase().includes(v) || p.principio?.toLowerCase().includes(v)));
+}
+
+function enviar(){
+  html2canvas(document.body).then(canvas => {
+    canvas.toBlob(blob => {
+      const file = new File([blob], 'orcamento.png', { type: 'image/png' });
+      const data = new FormData();
+      data.append('file', file);
+      navigator.share({ files: [file], title: 'Orçamento' });
+    });
+  });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</body>
+</html>
