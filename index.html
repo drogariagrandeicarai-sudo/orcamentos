@@ -76,7 +76,10 @@ function renderProdutos(lista){
 }
 
 function add(p){
-  carrinho.push({...p, qtd:1, desc:0});
+  // adiciona SOMENTE o item clicado
+  carrinho.push({ ...p, qtd: 1, desc: 0 });
+  renderCarrinho();
+});
   renderCarrinho();
 }
 
@@ -91,21 +94,44 @@ function renderCarrinho(){
   const div = document.getElementById('itens');
   div.innerHTML = '';
   let total = 0;
-  carrinho.forEach(i => {
+
+  carrinho.forEach((i, idx) => {
     const t = (i.preco - i.desc) * i.qtd;
     total += t;
+
     const d = document.createElement('div');
     d.className = 'item';
-    d.innerHTML = `${i.nome} <span class="etiqueta">${i.etiqueta}</span><br>R$ ${t.toFixed(2)}`;
+    d.innerHTML = `
+      <div class="name">${i.nome}<span class="etiqueta">${i.etiqueta}</span></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+        <label style="font-size:12px;">Qtd:</label>
+        <input type="number" min="1" value="${i.qtd}" style="width:60px;" onchange="atualizaQtd(${idx}, this.value)" />
+        <span style="margin-left:auto;">R$ ${t.toFixed(2)}</span>
+      </div>
+    `;
     div.appendChild(d);
   });
+
   document.getElementById('total').innerText = 'Total: R$ ' + total.toFixed(2);
+}
+
+function atualizaQtd(index, valor){
+  const q = parseInt(valor);
+  if(!isNaN(q) && q > 0){
+    carrinho[index].qtd = q;
+    renderCarrinho();
+  }
 }
 
 busca.oninput = e => {
   const v = e.target.value.toLowerCase();
-  renderProdutos(produtos.filter(p => p.nome?.toLowerCase().includes(v) || p.principio?.toLowerCase().includes(v)));
-}
+  renderProdutos(
+    produtos.filter(p =>
+      (p.nome && p.nome.toLowerCase().includes(v)) ||
+      (p.principio && p.principio.toLowerCase().includes(v))
+    )
+  );
+};
 
 function enviar(){
   html2canvas(document.body).then(canvas => {
